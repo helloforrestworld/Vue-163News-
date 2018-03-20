@@ -3,6 +3,7 @@
     <view-box>
       <x-header 
         slot="header"
+        class="header"
       >
         <span slot="overwrite-left">
           直播
@@ -12,7 +13,8 @@
           搜索
         </span>
       </x-header>
-      <scroller :lock-y="true">
+      
+      <vux-scroller :lock-y="true">
         <div class="my-scroller-tab">
           <tab  active-color="red">
             <tabItem selected>
@@ -35,29 +37,22 @@
             </tabItem>
           </tab>
         </div>
-      </scroller> 
+      </vux-scroller> 
       
-      <swiper :aspect-ratio="0.5" loop :list="swiperList" v-model="swiperIndex">
-      </swiper>
-      
-      <marquee class="my-marquee">
-        <marquee-item>
-          111
-        </marquee-item>
-        <marquee-item>
-          222
-        </marquee-item>  
-        <marquee-item>
-          333
-        </marquee-item>  
-        <marquee-item>
-          444
-        </marquee-item>  
-      </marquee>  
-      
-      <panel :list="panelList">
-        
-      </panel>
+      <scroller
+        :on-refresh="refresh"
+        :on-infinite="infinite"
+        class="vue-scroller"
+        ref = "vueScroller"
+      >
+        <swiper :aspect-ratio="0.5" loop :list="swiperList" v-model="swiperIndex">
+        </swiper>
+        <marquee class="my-marquee">
+          <marquee-item v-for="item,index in marqueeList" :key = "index">{{item.title}}</marquee-item>
+        </marquee>  
+        <panel :list="panelList">
+        </panel>
+      </scroller>
       
       <tabbar slot="bottom">
         <tabbar-item>
@@ -78,7 +73,22 @@
 </template>
 
 <script>
-import {ViewBox,XHeader,Tabbar,TabbarItem,Tab,TabItem,Swiper,Scroller,Marquee, MarqueeItem,Panel} from 'vux'
+import {ViewBox,XHeader,Tabbar,TabbarItem,Tab,TabItem,Swiper,Scroller as vuxScroller,Marquee, MarqueeItem,Panel} from 'vux'
+
+
+var refreshInfo = ['A','B01','B02','B03','B04','B05','B06','B07','B08','B09','B010']
+var keyValue = 'A'
+var key = 0
+var start = 0
+var end = start + 9
+function refreshKey(){
+  keyValue = refreshInfo[key]
+  key++
+  if(key > refreshInfo.length - 1){
+    key = 0
+  }
+}
+
 export default {
   name: 'App',
   components: {
@@ -89,40 +99,107 @@ export default {
     Tab, 
     TabItem,
     Swiper,
-    Scroller,
+    vuxScroller,
     Marquee, 
     MarqueeItem,
     Panel
   },
-  data(){
-    var panelList = []
-    for(var i = 0; i < 10; i++){
-      panelList.push({
-        src: 'http://somedomain.somdomain/x.jpg',
-        fallbackSrc: 'http://placeholder.qiniudn.com/60x60/3cc51f/ffffff',
-        title: '标题一',
-        desc: '由各种物质组成的巨型球状天体，叫做星球。星球有一定的形状，有自己的运行轨道。',
-        url: '/component/cell'
-      })
-    }
-    return {
-      swiperList:[{
-         url: 'javascript:',
-         img: 'https://static.vux.li/demo/1.jpg',
-         title: '送你一朵fua'
-        }, {
-         url: 'javascript:',
-         img: 'https://static.vux.li/demo/2.jpg',
-         title: '送你一辆车'
-        }, {
-         url: 'javascript:',
-         img: 'https://static.vux.li/demo/5.jpg',
-         title: '送你一次旅行',
-         fallbackImg: 'https://static.vux.li/demo/3.jpg'
+  created(){
+    this.$jsonp('http://3g.163.com/touch/jsonp/sy/recommend/0-9.html').then((res)=>{
+      
+      // 轮播图数据
+      this.swiperList = res.focus.filter((item)=>{
+        return item.addata === null && item.picInfo[0]
+      }).map((item)=>{
+        return {
+          img:item.picInfo[0].url,
+          title:item.title,
+          url:item.link
         }
-      ],
+      })
+      
+      // 滚动新闻数据
+      this.marqueeList = res.live.filter((item)=>{
+        return item.addata === null && item.picInfo[0]
+      }).map((item)=>{
+        return {title:item.title}
+      })
+      
+      // 图文列表数据
+      this.panelList = res.list.filter((item)=>{
+        return item.addata === null && item.picInfo[0]
+      }).map((item)=>{
+        return {
+          src:item.picInfo[0].url,
+          title:item.title,
+          url:item.link,
+          desc:item.digest
+        }
+      })
+      this.initDataFinished = true //初始数据加载完毕
+    })
+    
+  },
+  data(){
+    return {
+      swiperList:[],
+      marqueeList:[],
       swiperIndex:0,
-      panelList:panelList
+      panelList:[],
+      initDataFinished:false
+    }
+  },
+  methods: {
+    refresh() { //下拉刷新
+      refreshKey()
+      this.$jsonp('http://3g.163.com/touch/jsonp/sy/recommend/0-9.html', {
+          miss: '00',
+          refresh: keyValue
+      }).then((res)=>{
+        this.panelList = res.list.filter((item)=>{
+          return item.addata === null && item.picInfo[0]
+        }).map((item)=>{
+          return {
+            src:item.picInfo[0].url,
+            title:item.title,
+            url:item.link,
+            desc:item.digest
+          }
+        })
+        this.$refs.vueScroller.finishPullToRefresh()
+        this.$vux.toast.text(`更新了${this.panelList.length}条新闻`,'top')
+      })
+    },
+    infinite(){ //上拉下载更多
+      
+      if(!this.initDataFinished){ //初始数据没加载完不加载更多
+        this.$refs.vueScroller.finishInfinite()
+        return 
+      }
+      
+      this.$jsonp(`http://3g.163.com/touch/jsonp/sy/recommend/${start}-${end}.html`, {
+          miss: '00',
+          refresh: keyValue
+      }).then((res)=>{
+        var _this = this
+        setTimeout(function(){
+          _this.panelList = _this.panelList.concat(
+            res.list.filter((item)=>{
+              return item.addata === null && item.picInfo[0]
+            }).map((item)=>{
+              return {
+                src:item.picInfo[0].url,
+                title:item.title,
+                url:item.link,
+                desc:item.digest
+              }
+            })
+          )
+          _this.$refs.vueScroller.finishInfinite()
+          start += 9
+          end = start + 9
+        },1000)
+      })
     }
   }
 }
@@ -138,15 +215,37 @@ html, body {
 }
 #app {
   height: 100%;
-  h1 {
-    font-size: 22px
+  .header{
+    position:absolute;
+    left: 0;
+    top: 0;
+    z-index: 99;
+    width: 100%;
+    h1 {
+      font-size: 22px
+    }
   }
   .my-scroller-tab{
     width: 600px;
+    margin-top: 46px;
   }
   .my-marquee{
     margin: 4px;
   }
+  .vue-scroller{
+    top:100px;
+    .loading-layer{
+      padding-bottom: 100px;
+    }
+    .weui-media-box__hd,.weui-media-box__thumb{
+      width: 102px;
+      height: 70px;
+    }
+    .weui-media-box__bd{
+      height: 70px;
+    }
+  }
+  
 }
 
 
