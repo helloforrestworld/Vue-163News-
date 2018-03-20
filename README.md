@@ -6,7 +6,7 @@
 
 
 ###首页
-![预览][1]
+![此处输入图片的描述][1]
 
 
 ###总结
@@ -42,4 +42,5 @@
 >实例获取 <scroller ref="theScorller"></scroller>
 ```
 
-  [1]: https://helloforrestworld.github.io/vue-163News/afterbuild/gif/163.gif
+
+  [1]: https://ws1.sinaimg.cn/large/e8323205gy1fpjg9knoj3g20a60gqe82.jpg
