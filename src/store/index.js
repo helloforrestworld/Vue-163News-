@@ -30,7 +30,7 @@ var store = new Vuex.Store({
   actions:{
     getInitData({commit}){
       var swiperList,marqueeList,panelList
-      Vue.jsonp('http://3g.163.com/touch/jsonp/sy/recommend/0-9.html').then((res)=>{
+      Vue.jsonp('https://3g.163.com/touch/jsonp/sy/recommend/0-9.html').then((res)=>{
         
         // 轮播图数据
         swiperList = res.focus.filter((item)=>{
@@ -70,7 +70,7 @@ var store = new Vuex.Store({
     pullRefresh({commit},payload){
       payload.refreshKey()
       var panelList = []
-      return Vue.jsonp('http://3g.163.com/touch/jsonp/sy/recommend/0-9.html', {
+      return Vue.jsonp('https://3g.163.com/touch/jsonp/sy/recommend/0-9.html', {
           miss: '00',
           refresh: payload.keyValue
       }).then((res)=>{
@@ -96,7 +96,7 @@ var store = new Vuex.Store({
     },
     pushLoadMore({commit,state},payload){
       var panelListMore = []
-      return Vue.jsonp(`http://3g.163.com/touch/jsonp/sy/recommend/${payload.start}-${payload.end}.html`, {
+      return Vue.jsonp(`https://3g.163.com/touch/jsonp/sy/recommend/${payload.start}-${payload.end}.html`, {
           miss: '00',
           refresh: payload.keyValue
       }).then((res)=>{
