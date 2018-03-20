@@ -37,8 +37,27 @@
         </div>
       </scroller> 
       
-      <swiper :aspect-ratio="0.5" loop :list="baseList" v-model="swiperIndex">
+      <swiper :aspect-ratio="0.5" loop :list="swiperList" v-model="swiperIndex">
       </swiper>
+      
+      <marquee class="my-marquee">
+        <marquee-item>
+          111
+        </marquee-item>
+        <marquee-item>
+          222
+        </marquee-item>  
+        <marquee-item>
+          333
+        </marquee-item>  
+        <marquee-item>
+          444
+        </marquee-item>  
+      </marquee>  
+      
+      <panel :list="panelList">
+        
+      </panel>
       
       <tabbar slot="bottom">
         <tabbar-item>
@@ -59,7 +78,7 @@
 </template>
 
 <script>
-import {ViewBox,XHeader,Tabbar,TabbarItem,Tab,TabItem,Swiper,Scroller } from 'vux'
+import {ViewBox,XHeader,Tabbar,TabbarItem,Tab,TabItem,Swiper,Scroller,Marquee, MarqueeItem,Panel} from 'vux'
 export default {
   name: 'App',
   components: {
@@ -70,11 +89,24 @@ export default {
     Tab, 
     TabItem,
     Swiper,
-    Scroller
+    Scroller,
+    Marquee, 
+    MarqueeItem,
+    Panel
   },
   data(){
+    var panelList = []
+    for(var i = 0; i < 10; i++){
+      panelList.push({
+        src: 'http://somedomain.somdomain/x.jpg',
+        fallbackSrc: 'http://placeholder.qiniudn.com/60x60/3cc51f/ffffff',
+        title: '标题一',
+        desc: '由各种物质组成的巨型球状天体，叫做星球。星球有一定的形状，有自己的运行轨道。',
+        url: '/component/cell'
+      })
+    }
     return {
-      baseList:[{
+      swiperList:[{
          url: 'javascript:',
          img: 'https://static.vux.li/demo/1.jpg',
          title: '送你一朵fua'
@@ -89,7 +121,8 @@ export default {
          fallbackImg: 'https://static.vux.li/demo/3.jpg'
         }
       ],
-      swiperIndex:0
+      swiperIndex:0,
+      panelList:panelList
     }
   }
 }
@@ -110,6 +143,9 @@ html, body {
   }
   .my-scroller-tab{
     width: 600px;
+  }
+  .my-marquee{
+    margin: 4px;
   }
 }
 
