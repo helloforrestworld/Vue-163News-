@@ -42,4 +42,4 @@
 >实例获取 <scroller ref="theScorller"></scroller>
 ```
 
-  [1]: https://ws1.sinaimg.cn/large/e8323205gy1fpjfie6ujqg20a60igb2h.jpg
+  [1]: https://helloforrestworld.github.io/vue-163News/afterbuild/git/163.gif
