@@ -45,7 +45,7 @@
         class="vue-scroller"
         ref = "vueScroller"
       >
-        <swiper :aspect-ratio="0.5" loop :list="swiperList" v-model="swiperIndex">
+        <swiper loop :list="swiperList" v-model="swiperIndex">
         </swiper>
         <marquee class="my-marquee">
           <marquee-item v-for="item,index in marqueeList" :key = "index">{{item.title}}</marquee-item>
@@ -74,20 +74,14 @@
 
 <script>
 import {ViewBox,XHeader,Tabbar,TabbarItem,Tab,TabItem,Swiper,Scroller as vuxScroller,Marquee, MarqueeItem,Panel} from 'vux'
+import {mapState} from 'vuex'
 
 
-var refreshInfo = ['A','B01','B02','B03','B04','B05','B06','B07','B08','B09','B010']
-var keyValue = 'A'
-var key = 0
-var start = 0
-var end = start + 9
-function refreshKey(){
-  keyValue = refreshInfo[key]
-  key++
-  if(key > refreshInfo.length - 1){
-    key = 0
-  }
-}
+var  refreshInfo =['A','B01','B02','B03','B04','B05','B06','B07','B08','B09']//接口参数
+var  keyValue = 'A'//接口参数
+var  key = 0 //接口索引
+var  start = 0//接口索引
+var  end = start + 9 //接口索阴
 
 export default {
   name: 'App',
@@ -105,101 +99,51 @@ export default {
     Panel
   },
   created(){
-    this.$jsonp('http://3g.163.com/touch/jsonp/sy/recommend/0-9.html').then((res)=>{
-      
-      // 轮播图数据
-      this.swiperList = res.focus.filter((item)=>{
-        return item.addata === null && item.picInfo[0]
-      }).map((item)=>{
-        return {
-          img:item.picInfo[0].url,
-          title:item.title,
-          url:item.link
-        }
-      })
-      
-      // 滚动新闻数据
-      this.marqueeList = res.live.filter((item)=>{
-        return item.addata === null && item.picInfo[0]
-      }).map((item)=>{
-        return {title:item.title}
-      })
-      
-      // 图文列表数据
-      this.panelList = res.list.filter((item)=>{
-        return item.addata === null && item.picInfo[0]
-      }).map((item)=>{
-        return {
-          src:item.picInfo[0].url,
-          title:item.title,
-          url:item.link,
-          desc:item.digest
-        }
-      })
-      this.initDataFinished = true //初始数据加载完毕
-    })
-    
+    this.$store.dispatch('getInitData')//首页数据初始化
   },
   data(){
     return {
-      swiperList:[],
-      marqueeList:[],
-      swiperIndex:0,
-      panelList:[],
-      initDataFinished:false
+      swiperIndex:0,//轮播图索引
+      infiniteTimer:null
     }
   },
+  computed:{
+    ...mapState(['swiperList','marqueeList','panelList','initDataFinished'])
+  },
   methods: {
+    refreshKey(){
+      keyValue = refreshInfo[key]
+      key++
+      if(key > refreshInfo.length - 1){
+        key = 0
+      }
+    },
+    refreshStart(){
+      start += 9
+      end = start + 9
+    },
     refresh() { //下拉刷新
-      refreshKey()
-      this.$jsonp('http://3g.163.com/touch/jsonp/sy/recommend/0-9.html', {
-          miss: '00',
-          refresh: keyValue
-      }).then((res)=>{
-        this.panelList = res.list.filter((item)=>{
-          return item.addata === null && item.picInfo[0]
-        }).map((item)=>{
-          return {
-            src:item.picInfo[0].url,
-            title:item.title,
-            url:item.link,
-            desc:item.digest
-          }
-        })
+      
+      this.$store.dispatch('pullRefresh',{refreshKey:this.refreshKey,keyValue})
+      .then((n)=>{
         this.$refs.vueScroller.finishPullToRefresh()
-        this.$vux.toast.text(`更新了${this.panelList.length}条新闻`,'top')
+        this.$vux.toast.text(`更新了${n}条新闻`,'top')
       })
+      
     },
     infinite(){ //上拉下载更多
-      
       if(!this.initDataFinished){ //初始数据没加载完不加载更多
         this.$refs.vueScroller.finishInfinite()
         return 
       }
-      
-      this.$jsonp(`http://3g.163.com/touch/jsonp/sy/recommend/${start}-${end}.html`, {
-          miss: '00',
-          refresh: keyValue
-      }).then((res)=>{
-        var _this = this
-        setTimeout(function(){
-          _this.panelList = _this.panelList.concat(
-            res.list.filter((item)=>{
-              return item.addata === null && item.picInfo[0]
-            }).map((item)=>{
-              return {
-                src:item.picInfo[0].url,
-                title:item.title,
-                url:item.link,
-                desc:item.digest
-              }
-            })
-          )
-          _this.$refs.vueScroller.finishInfinite()
-          start += 9
-          end = start + 9
-        },1000)
-      })
+      clearTimeout(this.infiniteTimer)
+      this.infiniteTimer = setTimeout(()=>{
+        this.$store.dispatch('pushLoadMore',{keyValue,refreshStart:this.refreshStart,start,end})
+        .then((res)=>{
+          this.$refs.vueScroller.finishInfinite()
+          this.start += 9
+        })
+      },1000)
     }
   }
 }
